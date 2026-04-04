@@ -1,0 +1,270 @@
+import { useState, useEffect } from "react";
+import Navbar from "@/components/Navbar";
+import { useReveal } from "@/hooks/use-reveal";
+import { Button } from "@/components/ui/button";
+import { Download, Filter, Loader2, Paperclip } from "lucide-react";
+import { useCaseContext } from "@/contexts/CaseContext";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+
+const clusterToType: Record<string, string> = {
+  appearance: "evidence",
+  sensory: "evidence",
+  location: "location",
+  witness: "person",
+  timeline: "time",
+  event: "event",
+};
+
+const nodeColors: Record<string, { bg: string; border: string; text: string }> = {
+  event: { bg: "hsl(var(--graph-node-event))", border: "hsl(var(--sage-dark))", text: "#fff" },
+  person: { bg: "hsl(var(--graph-node-person))", border: "hsl(var(--gold))", text: "#fff" },
+  location: { bg: "hsl(var(--graph-node-location))", border: "hsl(var(--graph-node-location))", text: "#fff" },
+  evidence: { bg: "hsl(var(--graph-node-evidence))", border: "hsl(var(--graph-node-evidence))", text: "#fff" },
+  time: { bg: "hsl(var(--muted-foreground))", border: "hsl(var(--foreground))", text: "#fff" },
+  // New: media evidence type with distinct amber/gold color
+  media_evidence: { bg: "#d97706", border: "#b45309", text: "#fff" },
+};
+
+const typeLabels: Record<string, string> = {
+  event: "Events",
+  person: "People",
+  location: "Locations",
+  evidence: "Evidence",
+  time: "Timeline",
+  media_evidence: "Media Evidence",
+};
+
+export default function GraphView() {
+  const revealRef = useReveal();
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [edges, setEdges] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<string | null>(null);
+  const { activeCaseId } = useCaseContext();
+
+  // Drag state
+  const [draggingNode, setDraggingNode] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    async function fetchGraph() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/cases/${activeCaseId}/graph`);
+        if (res.ok) {
+          const data = await res.json();
+
+          const mappedNodes = data.nodes.map((n: any) => ({
+            id: n.id,
+            label: n.label || n.content || "Unnamed Node",
+            type: n.type === "evidence" && n.id?.startsWith("ev_") ? "media_evidence" : (n.type || clusterToType[n.cluster?.toLowerCase()] || "event"),
+            x: n.x ?? n.position?.x ?? (Math.random() * 70 + 15),
+            y: n.y ?? n.position?.y ?? (Math.random() * 70 + 15),
+          }));
+
+          setNodes(mappedNodes);
+          setEdges(data.edges || []);
+        }
+      } catch (err) {
+        console.error("Failed to load graph", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (activeCaseId) {
+      fetchGraph();
+    }
+  }, [activeCaseId]);
+
+  const filteredNodes = filterType ? nodes.filter(n => n.type === filterType) : nodes;
+  const filteredNodeIds = new Set(filteredNodes.map(n => n.id));
+  const filteredEdges = edges.filter(e => filteredNodeIds.has(e.from) && filteredNodeIds.has(e.to));
+
+  const getNodePos = (id: string) => {
+    const n = nodes.find(n => n.id === id);
+    return n ? { x: n.x, y: n.y } : { x: 0, y: 0 };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>, id: string) => {
+    if (draggingNode !== id) return;
+    const container = e.currentTarget.parentElement?.getBoundingClientRect();
+    if (!container) return;
+
+    const x = ((e.clientX - dragOffset.x - container.left) / container.width) * 100;
+    const y = ((e.clientY - dragOffset.y - container.top) / container.height) * 100;
+
+    setNodes(prev => prev.map(n =>
+      n.id === id
+        ? { ...n, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) }
+        : n
+    ));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    setDraggingNode(null);
+  };
+
+  // Count of media evidence nodes
+  const mediaEvidenceCount = nodes.filter(n => n.type === "media_evidence").length;
+  const hasEvidenceEdges = edges.filter(e => e.label === "HAS_EVIDENCE").length;
+
+  return (
+    <div ref={revealRef} className="min-h-screen bg-background">
+      <Navbar />
+
+      <div className="pt-20 px-4 sm:px-6 pb-8">
+        <div className="container mx-auto max-w-7xl">
+          <div className="reveal flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl font-display mb-1">Adaptive Testimony Graph</h1>
+              <p className="text-muted-foreground">Visual evidence network dynamically generated by AI.</p>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-[1fr_300px] gap-6">
+            <div className="reveal">
+              <div className="relative w-full h-[550px] rounded-2xl bg-card border border-border/50 overflow-hidden">
+                {loading ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                    <Loader2 className="w-8 h-8 animate-spin mb-3" />
+                    <p>Generating Relationships...</p>
+                  </div>
+                ) : (
+                  <>
+                    <svg className="absolute inset-0 w-full h-full">
+                      {filteredEdges.map((edge, i) => {
+                        const from = getNodePos(edge.from);
+                        const to = getNodePos(edge.to);
+                        const midX = (from.x + to.x) / 2;
+                        const midY = (from.y + to.y) / 2;
+                        const isEvidenceEdge = edge.label === "HAS_EVIDENCE";
+                        return (
+                          <g key={i}>
+                            <line
+                              x1={`${from.x}%`} y1={`${from.y}%`}
+                              x2={`${to.x}%`} y2={`${to.y}%`}
+                              stroke={isEvidenceEdge ? "#d97706" : "hsl(var(--graph-edge))"}
+                              strokeWidth={isEvidenceEdge ? "2" : "1.5"}
+                              opacity={isEvidenceEdge ? "0.7" : "0.5"}
+                              strokeDasharray={isEvidenceEdge ? "6 3" : ""}
+                            />
+                            <text
+                              x={`${midX}%`}
+                              y={`${midY}%`}
+                              textAnchor="middle"
+                              dy="-6"
+                              className={`text-[9px] ${isEvidenceEdge ? "fill-amber-600 font-semibold" : "fill-muted-foreground"}`}
+                            >
+                              {edge.label}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+
+                    {filteredNodes.map((node) => {
+                      const isMediaEvidence = node.type === "media_evidence";
+                      const colors = nodeColors[node.type] || nodeColors.event;
+                      const isSelected = selectedNode === node.id;
+                      const isDragging = draggingNode === node.id;
+
+                      return (
+                        <button
+                          key={node.id}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            e.currentTarget.setPointerCapture(e.pointerId);
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setDragOffset({
+                              x: e.clientX - (rect.left + rect.width / 2),
+                              y: e.clientY - (rect.top + rect.height / 2)
+                            });
+                            setDraggingNode(node.id);
+                            setSelectedNode(node.id);
+                          }}
+                          onPointerMove={(e) => handlePointerMove(e, node.id)}
+                          onPointerUp={handlePointerUp}
+                          onPointerCancel={handlePointerUp}
+                          className={`absolute hover:scale-110 active:scale-[0.97] touch-none cursor-grab active:cursor-grabbing ${
+                            isDragging ? "scale-110 z-30" : "transition-all duration-300 z-10"
+                          } ${isSelected && !isDragging ? "z-20" : ""}`}
+                          style={{
+                            left: `${node.x}%`,
+                            top: `${node.y}%`,
+                            transform: "translate(-50%, -50%)",
+                          }}
+                        >
+                          <div
+                            className={`${isMediaEvidence ? "w-[70px] h-[70px] rounded-xl" : "w-[80px] h-[80px] rounded-2xl"} flex items-center justify-center text-center shadow-lg p-2 ${isSelected ? "ring-4 ring-ring/30" : ""} ${isMediaEvidence ? "border-2 border-dashed border-amber-500" : ""}`}
+                            style={{ backgroundColor: colors.bg, borderColor: isMediaEvidence ? undefined : colors.border }}
+                          >
+                            {isMediaEvidence && <Paperclip className="w-4 h-4 text-white absolute top-1 right-1 opacity-70" />}
+                            <span className="text-[10px] font-semibold leading-tight whitespace-normal break-words line-clamp-4" style={{ color: colors.text }}>
+                              {node.label}
+                            </span>
+                          </div>
+                          <div className="text-[9px] text-center mt-1 uppercase tracking-wider text-muted-foreground font-semibold">
+                            {isMediaEvidence ? "📎 evidence" : node.type}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="reveal space-y-4">
+              <div className="p-5 rounded-2xl bg-card border border-border/50">
+                <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                  <Filter className="w-4 h-4" />
+                  Filter by Type
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setFilterType(null)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${!filterType ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+                  >
+                    All
+                  </button>
+                  {Object.entries(typeLabels).map(([type, label]) => (
+                    <button
+                      key={type}
+                      onClick={() => setFilterType(filterType === type ? null : type)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filterType === type ? "text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+                      style={filterType === type ? { backgroundColor: nodeColors[type]?.bg || "#666" } : {}}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-card border border-border/50">
+                <h3 className="font-semibold mb-3 text-sm">Graph Stats</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Nodes", value: nodes.length },
+                    { label: "Edges", value: edges.length },
+                    { label: "Evidence", value: mediaEvidenceCount },
+                    { label: "Evidence Links", value: hasEvidenceEdges },
+                  ].map((s, i) => (
+                    <div key={i} className="text-center p-3 rounded-lg bg-background">
+                      <div className="text-xl font-display text-primary">{s.value}</div>
+                      <div className="text-xs text-muted-foreground">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

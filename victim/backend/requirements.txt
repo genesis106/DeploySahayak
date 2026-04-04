@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+motor
+pydantic
+python-dotenv
+openai
+google-genai
+httpx
+bcrypt
+python-jose[cryptography]
+cloudinary
+python-multipart
+pycryptodome
