@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Download, Printer, Shield, Loader2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const API_BASE_URL = "http://localhost:8001/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 const TEMPLATES = {
   FIR: "FIRST INFORMATION REPORT\n(Under Section 154 Cr.P.C.)\n\n1. District: [DISTRICT] | P.S: [POLICE STATION] | Year: 2024\n2. Acts & Sections: [SECTIONS]\n3. Occurrence of Offence: [DATE/TIME]\n4. Information received at P.S. Date: [DATE]\n\nComplainant Details:\nName: [COMPLAINANT NAME]\nAddress: [ADDRESS]\n\nDetails of known/suspected/unknown accused:\n[ACCUSED DETAILS OR 'UNKNOWN']\n\nReasons for delay in reporting:\n[N/A OR REASONS]\n\nParticulars of properties involved/stolen:\n[DETAILS]\n\nBrief Summary of Facts:\n[INSERT RELEVANT TESTIMONY SUMMARY HERE]",

@@ -3,7 +3,7 @@ import { Loader2, Globe, Paperclip, AlertCircle, ZoomIn, ZoomOut } from "lucide-
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-const API_BASE_URL = "http://localhost:8001/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 const clusterColors: Record<string, string> = {
   appearance: "border-orange-500 bg-orange-50 text-orange-950", 

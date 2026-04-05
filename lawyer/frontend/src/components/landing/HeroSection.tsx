@@ -18,10 +18,10 @@ const HeroSection = () => (
         </p>
         <div className="flex flex-wrap gap-4">
           <Button variant="hero" size="lg" className="rounded-full px-8" asChild>
-            <a href="http://localhost:8081/dashboard"><Heart className="w-4 h-4 mr-1" /> I am a Victim</a>
+            <a href={`${import.meta.env.VITE_MAIN_PAGE_APP_URL}/dashboard`}><Heart className="w-4 h-4 mr-1" /> I am a Victim</a>
           </Button>
           <Button variant="hero-outline" size="lg" className="rounded-full px-8" asChild>
-            <a href="http://localhost:8082/"><FileText className="w-4 h-4 mr-1" /> I am a Lawyer</a>
+            <a href={`${import.meta.env.VITE_LAWYER_APP_URL}`}><FileText className="w-4 h-4 mr-1" /> I am a Lawyer</a>
           </Button>
         </div>
       </div>
