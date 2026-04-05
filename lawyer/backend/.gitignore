@@ -1,0 +1,35 @@
+# Environment
+.env
+lawyer/backend/.env
+victim/backend/.env
+backend/.env
+frontend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+backend/venv/
+backend/__pycache__/
+
+# Node
+node_modules/
+frontend/node_modules/
+dist/
+build/
+.next/
+
+# Database / Local Data
+backend/data/
+*.log
+data/
+test_cases.py
+test_find.py
+test_find2.py
+test_get_cases.py
+
+# OS
+.DS_Store
+Thumbs.db
