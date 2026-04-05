@@ -91,7 +91,7 @@ from config import (
     POWERED_BY_BNS, POWERED_BY_GAP, POWERED_BY_DRAFT, POWERED_BY_FULL, POWERED_BY_CASES,
     COLLECTION_CASES,
 )
-
+FRONTEND_BASE_URL: str = os.getenv("FRONTEND_BASE_URL", "")
 logger = logging.getLogger(__name__)
 
 # ── Cloudinary setup ──────────────────────────────────────────────────────────
@@ -105,7 +105,9 @@ cloudinary.config(
 # ── AES-256 Config ────────────────────────────────────────────────────────────
 def _get_aes_key() -> bytes:
     # Hash the key to ensure it's exactly 32 bytes for AES-256
-    raw_key = AES_ENCRYPTION_KEY or "fallback-sahayak-aes-key-32bytes++"
+    if not AES_ENCRYPTION_KEY:
+        raise ValueError("AES_ENCRYPTION_KEY must be set in environment")
+    raw_key = AES_ENCRYPTION_KEY
     return hashlib.sha256(raw_key.encode("utf-8")).digest()
 
 def aes_encrypt(plaintext: str) -> str:
@@ -1067,7 +1069,10 @@ async def create_share_link(case_id: str, req: ShareLinkRequest = Body(...)):
     await _resolve_case(case_id)
     token = secrets.token_urlsafe(32)
     # Generate local frontend URL for Dev
-    share_url = f"http://localhost:8080/share/{token}"  
+    from config import FRONTEND_BASE_URL
+    if not FRONTEND_BASE_URL:
+        raise HTTPException(status_code=500, detail="FRONTEND_BASE_URL not configured")
+    share_url = f"{FRONTEND_BASE_URL}/share/{token}"  
     
     now = datetime.now()
     expires_at = now + timedelta(hours=SHARE_LINK_EXPIRY_HOURS)

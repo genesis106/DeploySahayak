@@ -7,7 +7,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── MongoDB ────────────────────────────────────────────────────────────────────
-MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_URI: str = os.getenv("MONGO_URI")
+if not MONGO_URI:
+    raise ValueError("MONGO_URI is not set in environment variables")
+
 MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "sahayak_db")
 
 COLLECTION_FRAGMENTS: str     = os.getenv("COLLECTION_FRAGMENTS",     "fragments")
@@ -27,24 +30,27 @@ CLOUDINARY_API_KEY: str    = os.getenv("CLOUDINARY_API_KEY", "")
 CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
 
 # ── AES-256 Encryption ─────────────────────────────────────────────────────────
-# 32-byte key for AES-256 encryption. Falls back to a padded JWT_SECRET_KEY.
 AES_ENCRYPTION_KEY: str = os.getenv("AES_ENCRYPTION_KEY", "")
 SHARE_LINK_EXPIRY_HOURS: int = int(os.getenv("SHARE_LINK_EXPIRY_HOURS", "48"))
 
 # ── JWT Authentication ─────────────────────────────────────────────────────────
-JWT_SECRET_KEY: str       = os.getenv("JWT_SECRET_KEY", "")
-JWT_ALGORITHM: str        = os.getenv("JWT_ALGORITHM", "HS256")
-JWT_EXPIRY_MINUTES: int   = int(os.getenv("JWT_EXPIRY_MINUTES", "1440"))
+JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY")
+if not JWT_SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY is not set")
+
+JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+JWT_EXPIRY_MINUTES: int = int(os.getenv("JWT_EXPIRY_MINUTES", "1440"))
 
 # ── Gemini ─────────────────────────────────────────────────────────────────────
-GEMINI_API_KEY: str            = os.getenv("GEMINI_API_KEY", "")
-GEMINI_API_KEY_DOCS: str       = os.getenv("GEMINI_API_KEY_DOCS", GEMINI_API_KEY)
-GEMINI_API_KEY_MAP: str        = os.getenv("GEMINI_API_KEY_MAP", GEMINI_API_KEY)
-GEMINI_API_KEY_INSIGHTS: str   = os.getenv("GEMINI_API_KEY_INSIGHTS", GEMINI_API_KEY)
-GEMINI_API_KEY_CHAT: str       = os.getenv("GEMINI_API_KEY_CHAT", GEMINI_API_KEY)
-GEMINI_MODEL: str              = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-GEMINI_TIMEOUT_DEFAULT: float  = float(os.getenv("GEMINI_TIMEOUT_DEFAULT", "40"))
-GEMINI_TIMEOUT_DRAFT: float    = float(os.getenv("GEMINI_TIMEOUT_DRAFT", "60"))
+GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_KEY_DOCS: str = os.getenv("GEMINI_API_KEY_DOCS", GEMINI_API_KEY)
+GEMINI_API_KEY_MAP: str = os.getenv("GEMINI_API_KEY_MAP", GEMINI_API_KEY)
+GEMINI_API_KEY_INSIGHTS: str = os.getenv("GEMINI_API_KEY_INSIGHTS", GEMINI_API_KEY)
+GEMINI_API_KEY_CHAT: str = os.getenv("GEMINI_API_KEY_CHAT", GEMINI_API_KEY)
+
+GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_TIMEOUT_DEFAULT: float = float(os.getenv("GEMINI_TIMEOUT_DEFAULT", "40"))
+GEMINI_TIMEOUT_DRAFT: float = float(os.getenv("GEMINI_TIMEOUT_DRAFT", "60"))
 
 # ── Claw Law external search ───────────────────────────────────────────────────
 CLAWLAW_JUDGMENT_URL: str = os.getenv(
@@ -52,13 +58,11 @@ CLAWLAW_JUDGMENT_URL: str = os.getenv(
 )
 
 # ── CORS ───────────────────────────────────────────────────────────────────────
-_raw_origins: str = os.getenv(
-    "CORS_ORIGINS",
-    "http://localhost:5173,http://localhost:8080,http://localhost:8081,"
-    "http://localhost:8082,http://127.0.0.1:8080,http://127.0.0.1:8081,"
-    "http://127.0.0.1:8082",
-)
+_raw_origins: str = os.getenv("CORS_ORIGINS", "")
 CORS_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+if not CORS_ORIGINS:
+    raise ValueError("CORS_ORIGINS must be set in environment variables")
 
 # ── App metadata ───────────────────────────────────────────────────────────────
 APP_TITLE: str       = os.getenv("APP_TITLE",       "Sahayak Cognitive Map API")
@@ -66,9 +70,9 @@ APP_VERSION: str     = os.getenv("APP_VERSION",     "3.0")
 APP_DESCRIPTION: str = os.getenv("APP_DESCRIPTION", "Claw Legal Integration — Multi-Case")
 
 # ── Defaults ───────────────────────────────────────────────────────────────────
-DEFAULT_CASE_ID: str              = os.getenv("DEFAULT_CASE_ID",              "default")
-TIMESTAMP_FORMAT: str             = os.getenv("TIMESTAMP_FORMAT",             "%Y-%m-%d %H:%M")
-DEFAULT_FRAGMENT_TIMESTAMP: str   = os.getenv("DEFAULT_FRAGMENT_TIMESTAMP",   "Just now")
+DEFAULT_CASE_ID: str            = os.getenv("DEFAULT_CASE_ID", "default")
+TIMESTAMP_FORMAT: str           = os.getenv("TIMESTAMP_FORMAT", "%Y-%m-%d %H:%M")
+DEFAULT_FRAGMENT_TIMESTAMP: str = os.getenv("DEFAULT_FRAGMENT_TIMESTAMP", "Just now")
 
 # ── Legal branding ─────────────────────────────────────────────────────────────
 POWERED_BY_BNS: str   = os.getenv("POWERED_BY_BNS",   "Claw LegalGPT × Sahayak")
