@@ -7,7 +7,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── MongoDB ────────────────────────────────────────────────────────────────────
-MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_URI: str = os.getenv("MONGO_URI")
+if not MONGO_URI:
+    raise ValueError("MONGO_URI is not set in environment variables")
 MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME", "sahayak_db")
 
 COLLECTION_FRAGMENTS: str     = os.getenv("COLLECTION_FRAGMENTS",     "fragments")
@@ -31,7 +33,9 @@ AES_ENCRYPTION_KEY: str = os.getenv("AES_ENCRYPTION_KEY", "")
 SHARE_LINK_EXPIRY_HOURS: int = int(os.getenv("SHARE_LINK_EXPIRY_HOURS", "48"))
 
 # ── JWT Authentication ─────────────────────────────────────────────────────────
-JWT_SECRET_KEY: str       = os.getenv("JWT_SECRET_KEY", "")
+JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY")
+if not JWT_SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY is not set")
 JWT_ALGORITHM: str        = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRY_MINUTES: int   = int(os.getenv("JWT_EXPIRY_MINUTES", "1440"))
 
@@ -51,12 +55,11 @@ CLAWLAW_JUDGMENT_URL: str = os.getenv(
 )
 
 # ── CORS ───────────────────────────────────────────────────────────────────────
-_raw_origins: str = os.getenv(
-    "CORS_ORIGINS",
-    "http://localhost:5173,http://localhost:8080,http://localhost:8081,"
-    "http://localhost:8082,http://127.0.0.1:8080,http://127.0.0.1:8081,"
-    "http://127.0.0.1:8082",
-)
+_raw_origins: str = os.getenv("CORS_ORIGINS", "")
+CORS_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+if not CORS_ORIGINS:
+    raise ValueError("CORS_ORIGINS must be set in environment variables")
 CORS_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 # ── App metadata ───────────────────────────────────────────────────────────────
